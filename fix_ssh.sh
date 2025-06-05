@@ -31,22 +31,33 @@ else
 fi
 
 echo ""
-echo "--- STEP 2: Attempt to Connect Again ---"
-echo "Try connecting with the 'admin' user first:"
-echo "ssh -i \"ciel_big_data_ed25519.pem\" admin@ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
-echo ""
-echo "If that fails, try the default username for your EC2 instance's OS."
-echo "Common usernames are 'ec2-user' (for Amazon Linux, RHEL) or 'ubuntu' (for Ubuntu)."
-echo ""
-echo "Example for Amazon Linux:"
-echo "ssh -i \"ciel_big_data_ed25519.pem\" ec2-user@ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
-echo ""
-echo "Example for Ubuntu:"
-echo "ssh -i \"ciel_big_data_ed25519.pem\" ubuntu@ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
-echo ""
+echo "--- STEP 2: Attempting SSH Connections ---"
 
-echo "--- STEP 3: Use Verbose Mode for Debugging (If Still Failing) ---"
-echo "If you still can't connect, use the '-v' flag to get detailed error information."
-echo "Replace YOUR_USERNAME with the username you are trying ('admin', 'ec2-user', etc.)."
+# Try different common usernames
+USERNAMES=("admin" "ec2-user" "ubuntu")
+HOST="ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
+KEY_FILE="ciel_big_data_ed25519.pem"
+
+for username in "${USERNAMES[@]}"; do
+    echo ""
+    echo "Trying to connect with username: $username"
+    echo "Running: ssh -o ConnectTimeout=10 -o BatchMode=yes -i \"$KEY_FILE\" $username@$HOST"
+    
+    # Attempt connection with timeout and non-interactive mode
+    ssh -o ConnectTimeout=10 -o BatchMode=yes -i "$KEY_FILE" "$username@$HOST" "echo 'Connection successful with user: $username'" 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        echo "SUCCESS! You can connect using:"
+        echo "ssh -i \"$KEY_FILE\" $username@$HOST"
+        exit 0
+    else
+        echo "Failed to connect with username: $username"
+    fi
+done
+
 echo ""
-echo "ssh -v -i \"ciel_big_data_ed25519.pem\" YOUR_USERNAME@ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
+echo "--- All automatic attempts failed ---"
+echo "Try manual connection with verbose output to see detailed error:"
+echo "ssh -v -i \"$KEY_FILE\" admin@$HOST"
+echo ""
+echo "Or try with a different username if you know the correct one for your EC2 instance."
