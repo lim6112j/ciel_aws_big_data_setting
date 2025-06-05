@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# --- IMPORTANT: HOW TO RUN THIS SCRIPT ---
+# If you see a "permission denied" error when trying to run this script,
+# you first need to make it executable. Run this command in your terminal:
+#
+# chmod +x fix_ssh.sh
+#
+# After that, you can run the script with:
+#
+# ./fix_ssh.sh
+# -----------------------------------------
+
 # This script contains the steps to fix the "Permission denied (publickey)" SSH error
 # when connecting to an EC2 instance.
 #
