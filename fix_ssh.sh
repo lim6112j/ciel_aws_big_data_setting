@@ -33,8 +33,8 @@ fi
 echo ""
 echo "--- STEP 2: Attempting SSH Connections ---"
 
-# Try different common usernames
-USERNAMES=("admin" "ec2-user" "ubuntu")
+# Try different common usernames (added debian for Debian-based AMIs)
+USERNAMES=("debian" "admin" "ec2-user" "ubuntu")
 HOST="ec2-3-35-11-66.ap-northeast-2.compute.amazonaws.com"
 KEY_FILE="ciel_big_data_ed25519.pem"
 
@@ -71,7 +71,11 @@ echo ""
 echo "3. Try manual connection with verbose output:"
 echo "   ssh -v -i \"$KEY_FILE\" admin@$HOST"
 echo ""
-echo "4. Common issues:"
+echo "4. Based on the SSH debug output, this appears to be a Debian-based system."
+echo "   Try connecting with the 'debian' user:"
+echo "   ssh -i \"$KEY_FILE\" debian@$HOST"
+echo ""
+echo "5. Other common issues:"
 echo "   - EC2 instance might be stopped or terminated"
 echo "   - Security group might not allow SSH (port 22) from your IP"
 echo "   - Wrong key pair associated with the instance"
