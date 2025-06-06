@@ -1,5 +1,7 @@
 # aws DataLake/InfluxDB
 
+0. bitnami application credential in .env
+
 1. edit ~/.ssh/config
 
 ```
