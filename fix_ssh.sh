@@ -44,7 +44,7 @@ for username in "${USERNAMES[@]}"; do
     echo "Running: ssh -o ConnectTimeout=10 -o BatchMode=yes -i \"$KEY_FILE\" $username@$HOST"
     
     # Attempt connection with timeout and non-interactive mode
-    ssh -o ConnectTimeout=10 -o BatchMode=yes -i "$KEY_FILE" "$username@$HOST" "echo 'Connection successful with user: $username'" 2>/dev/null
+    ssh -o ConnectTimeout=10 -o BatchMode=yes -i "$KEY_FILE" "$username@$HOST" "echo 'Connection successful with user: $username'" 2>&1
     
     if [ $? -eq 0 ]; then
         echo "SUCCESS! You can connect using:"
@@ -52,12 +52,30 @@ for username in "${USERNAMES[@]}"; do
         exit 0
     else
         echo "Failed to connect with username: $username"
+        echo "Getting detailed error information..."
+        ssh -o ConnectTimeout=5 -o BatchMode=yes -v -i "$KEY_FILE" "$username@$HOST" exit 2>&1 | head -20
+        echo "---"
     fi
 done
 
 echo ""
 echo "--- All automatic attempts failed ---"
-echo "Try manual connection with verbose output to see detailed error:"
-echo "ssh -v -i \"$KEY_FILE\" admin@$HOST"
 echo ""
-echo "Or try with a different username if you know the correct one for your EC2 instance."
+echo "TROUBLESHOOTING STEPS:"
+echo "1. Verify your EC2 instance is running:"
+echo "   Check AWS Console or run: aws ec2 describe-instances"
+echo ""
+echo "2. Check if the key file exists and has correct permissions:"
+ls -la "$KEY_FILE" 2>/dev/null || echo "   ERROR: Key file '$KEY_FILE' not found!"
+echo ""
+echo "3. Try manual connection with verbose output:"
+echo "   ssh -v -i \"$KEY_FILE\" admin@$HOST"
+echo ""
+echo "4. Common issues:"
+echo "   - EC2 instance might be stopped or terminated"
+echo "   - Security group might not allow SSH (port 22) from your IP"
+echo "   - Wrong key pair associated with the instance"
+echo "   - Instance might use a different AMI with different default user"
+echo ""
+echo "5. If you know the correct username, try:"
+echo "   ssh -i \"$KEY_FILE\" YOUR_USERNAME@$HOST"
