@@ -47,37 +47,33 @@ class TestInfluxDBAWS:
     def test_connection(self):
         """Test basic connection to InfluxDB"""
         try:
-            health = self.client.health()
-            assert health.status == "pass", f"InfluxDB health check failed: {health.message}"
+            # Use ping() instead of deprecated health() method
+            result = self.client.ping()
+            assert result is True, "InfluxDB ping failed"
         except Exception as e:
-            import pytest
-            pytest.skip(f"InfluxDB connection test skipped: {e}")
+            pytest.fail(f"InfluxDB connection failed: {e}")
 
     def test_write_single_point(self):
         """Test writing a single data point"""
-        try:
-            point = Point("test_measurement") \
-                .tag("location", "aws-test") \
-                .field("temperature", 25.5) \
-                .field("humidity", 60.0) \
-                .time(datetime.now(timezone.utc))
-
-            # Write point
-            self.write_api.write(bucket=self.bucket, record=point)
-
-            # Verify write by querying
-            query = f'''
-            from(bucket: "{self.bucket}")
-            |> range(start: -1h)
-            |> filter(fn: (r) => r._measurement == "test_measurement")
-            |> filter(fn: (r) => r.location == "aws-test")
-            '''
-
-            result = self.query_api.query(query)
-            assert len(result) > 0, "No data found after write"
-        except Exception as e:
-            import pytest
-            pytest.skip(f"Write test skipped due to connection issues: {e}")
+        point = Point("test_measurement") \
+            .tag("location", "aws-test") \
+            .field("temperature", 25.5) \
+            .field("humidity", 60.0) \
+            .time(datetime.now(timezone.utc))
+        
+        # Write point
+        self.write_api.write(bucket=self.bucket, record=point)
+        
+        # Verify write by querying
+        query = f'''
+        from(bucket: "{self.bucket}")
+        |> range(start: -1h)
+        |> filter(fn: (r) => r._measurement == "test_measurement")
+        |> filter(fn: (r) => r.location == "aws-test")
+        '''
+        
+        result = self.query_api.query(query)
+        assert len(result) > 0, "No data found after write"
 
     def test_write_batch_points(self):
         """Test writing multiple data points"""
