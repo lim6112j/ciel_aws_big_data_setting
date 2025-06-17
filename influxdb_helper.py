@@ -11,7 +11,7 @@ class InfluxDBHelper:
         self.org = os.getenv('INFLUXDB_ORG')
         self.bucket = os.getenv('INFLUXDB_BUCKET')
         
-        self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
+        self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org, verify_ssl=False)
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
         self.query_api = self.client.query_api()
 

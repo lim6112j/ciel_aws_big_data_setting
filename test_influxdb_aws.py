@@ -17,7 +17,7 @@ class TestInfluxDBAWS:
         cls.org = os.getenv('INFLUXDB_ORG')
         cls.bucket = os.getenv('INFLUXDB_BUCKET')
         
-        cls.client = InfluxDBClient(url=cls.url, token=cls.token, org=cls.org)
+        cls.client = InfluxDBClient(url=cls.url, token=cls.token, org=cls.org, verify_ssl=False)
         cls.write_api = cls.client.write_api(write_options=SYNCHRONOUS)
         cls.query_api = cls.client.query_api()
         cls.delete_api = cls.client.delete_api()
