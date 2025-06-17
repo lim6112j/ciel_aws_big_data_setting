@@ -20,9 +20,13 @@ def generate_car_data(duration):
     influxdb_org = os.getenv('INFLUXDB_ORG')
     influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
 
-    # Initialize InfluxDB client
+    # Initialize InfluxDB client with SSL verification disabled for local development
     client = InfluxDBClient(
-        url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        url=influxdb_url, 
+        token=influxdb_token, 
+        org=influxdb_org,
+        verify_ssl=False
+    )
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
     current_time = start_time
@@ -42,8 +46,13 @@ def generate_car_data(duration):
             .field("heading", heading) \
             .time(int(current_time * 1e9), "ns")
 
-        # Write the data to InfluxDB
-        write_api.write(bucket=influxdb_bucket, org=influxdb_org, record=point)
+        # Write the data to InfluxDB with error handling
+        try:
+            write_api.write(bucket=influxdb_bucket, org=influxdb_org, record=point)
+            print(f"Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))}")
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}")
+            break
 
         current_time += 1
         time.sleep(1)
