@@ -14,15 +14,15 @@ class TestInfluxDBAWS:
     def setup_class(cls):
         """Setup InfluxDB client for testing"""
 
-        # Try to use HTTP instead of HTTPS if SSL is failing
-        if influxdb_url and influxdb_url.startswith('https://'):
-            influxdb_url = influxdb_url.replace('https://', 'http://')
-            print(f"Switching to HTTP: {influxdb_url}")
-
         cls.url = os.getenv('INFLUXDB_URL')
         cls.token = os.getenv('INFLUXDB_TOKEN')
         cls.org = os.getenv('INFLUXDB_ORG')
         cls.bucket = os.getenv('INFLUXDB_BUCKET')
+
+        # Try to use HTTP instead of HTTPS if SSL is failing
+        if cls.url and cls.url.startswith('https://'):
+            cls.url = cls.url.replace('https://', 'http://')
+            print(f"Switching to HTTP: {cls.url}")
 
         # Skip tests if environment variables are not set
         if not all([cls.url, cls.token, cls.org, cls.bucket]):
@@ -60,10 +60,10 @@ class TestInfluxDBAWS:
             .field("temperature", 25.5) \
             .field("humidity", 60.0) \
             .time(datetime.now(timezone.utc))
-        
+
         # Write point
         self.write_api.write(bucket=self.bucket, record=point)
-        
+
         # Verify write by querying
         query = f'''
         from(bucket: "{self.bucket}")
@@ -71,7 +71,7 @@ class TestInfluxDBAWS:
         |> filter(fn: (r) => r._measurement == "test_measurement")
         |> filter(fn: (r) => r.location == "aws-test")
         '''
-        
+
         result = self.query_api.query(query)
         assert len(result) > 0, "No data found after write"
 
