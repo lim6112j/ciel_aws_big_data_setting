@@ -46,6 +46,22 @@ def generate_car_data(duration):
         retries=3
     )
     write_api = client.write_api(write_options=SYNCHRONOUS)
+    
+    # Check if bucket exists and create it if it doesn't
+    buckets_api = client.buckets_api()
+    try:
+        bucket = buckets_api.find_bucket_by_name(influxdb_bucket)
+        if bucket is None:
+            print(f"Bucket '{influxdb_bucket}' not found. Creating it...")
+            from influxdb_client.domain.bucket import Bucket
+            bucket = Bucket(name=influxdb_bucket, org_id=influxdb_org)
+            buckets_api.create_bucket(bucket=bucket)
+            print(f"Created bucket '{influxdb_bucket}'")
+        else:
+            print(f"Using existing bucket '{influxdb_bucket}'")
+    except Exception as e:
+        print(f"Error checking/creating bucket: {e}")
+        print("Continuing anyway - bucket might exist with different permissions")
 
     current_time = start_time
     while current_time <= end_time:
