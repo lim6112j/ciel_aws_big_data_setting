@@ -11,6 +11,11 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# Create a custom SSL context that's more permissive
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+
 
 def generate_car_data(duration):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
@@ -24,6 +29,11 @@ def generate_car_data(duration):
     influxdb_token = os.getenv('INFLUXDB_TOKEN')
     influxdb_org = os.getenv('INFLUXDB_ORG')
     influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    
+    # Try to use HTTP instead of HTTPS if SSL is failing
+    if influxdb_url and influxdb_url.startswith('https://'):
+        influxdb_url = influxdb_url.replace('https://', 'http://')
+        print(f"Switching to HTTP: {influxdb_url}")
 
     # Initialize InfluxDB client with comprehensive SSL and connection settings
     client = InfluxDBClient(
