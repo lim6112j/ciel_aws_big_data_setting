@@ -3,10 +3,25 @@
 -- Create schema for metrics if it doesn't exist
 CREATE SCHEMA IF NOT EXISTS public;
 
+-- Create telegraf user if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'telegraf') THEN
+        CREATE USER telegraf WITH PASSWORD 'your-postgres-password';
+    END IF;
+END
+$$;
+
 -- Grant permissions to telegraf user
 GRANT ALL PRIVILEGES ON SCHEMA public TO telegraf;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO telegraf;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO telegraf;
+GRANT ALL PRIVILEGES ON DATABASE metrics TO telegraf;
+
+-- Grant default privileges for future objects
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO telegraf;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO telegraf;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO telegraf;
 
 -- Enable JSONB extension for better JSON support
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
