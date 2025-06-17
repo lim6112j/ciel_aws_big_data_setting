@@ -54,13 +54,25 @@ def generate_car_data(duration):
         if bucket is None:
             print(f"Bucket '{influxdb_bucket}' not found. Creating it...")
             from influxdb_client.domain.bucket import Bucket
-            bucket = Bucket(name=influxdb_bucket, org_id=influxdb_org)
+            from influxdb_client.domain.bucket_retention_rules import BucketRetentionRules
+            
+            # Create bucket with retention rules (30 days)
+            retention_rules = BucketRetentionRules(type="expire", every_seconds=2592000)  # 30 days
+            bucket = Bucket(name=influxdb_bucket, org_id=influxdb_org, retention_rules=[retention_rules])
             buckets_api.create_bucket(bucket=bucket)
             print(f"Created bucket '{influxdb_bucket}'")
         else:
             print(f"Using existing bucket '{influxdb_bucket}'")
     except Exception as e:
         print(f"Error checking/creating bucket: {e}")
+        # List available buckets for debugging
+        try:
+            buckets = buckets_api.find_buckets()
+            print("Available buckets:")
+            for b in buckets.buckets:
+                print(f"  - {b.name}")
+        except Exception as list_error:
+            print(f"Could not list buckets: {list_error}")
         print("Continuing anyway - bucket might exist with different permissions")
 
     current_time = start_time
