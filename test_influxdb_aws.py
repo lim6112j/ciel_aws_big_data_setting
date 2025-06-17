@@ -29,15 +29,18 @@ class TestInfluxDBAWS:
             import pytest
             pytest.skip("InfluxDB environment variables not configured")
 
-        try:
-            cls.client = InfluxDBClient(
-                url=cls.url, token=cls.token, org=cls.org, verify_ssl=False)
-            cls.write_api = cls.client.write_api(write_options=SYNCHRONOUS)
-            cls.query_api = cls.client.query_api()
-            cls.delete_api = cls.client.delete_api()
-        except Exception as e:
-            import pytest
-            pytest.skip(f"Cannot connect to InfluxDB: {e}")
+        # Create client with SSL disabled and timeout settings
+        cls.client = InfluxDBClient(
+            url=cls.url, 
+            token=cls.token, 
+            org=cls.org, 
+            verify_ssl=False,
+            ssl_ca_cert=None,
+            timeout=30000  # 30 second timeout
+        )
+        cls.write_api = cls.client.write_api(write_options=SYNCHRONOUS)
+        cls.query_api = cls.client.query_api()
+        cls.delete_api = cls.client.delete_api()
 
     @classmethod
     def teardown_class(cls):
@@ -77,61 +80,52 @@ class TestInfluxDBAWS:
 
     def test_write_batch_points(self):
         """Test writing multiple data points"""
-        try:
-            points = []
-            for i in range(10):
-                point = Point("batch_test") \
-                    .tag("sensor_id", f"sensor_{i}") \
-                    .field("value", i * 10.5) \
-                    .time(datetime.now(timezone.utc))
-                points.append(point)
+        points = []
+        for i in range(10):
+            point = Point("batch_test") \
+                .tag("sensor_id", f"sensor_{i}") \
+                .field("value", i * 10.5) \
+                .time(datetime.now(timezone.utc))
+            points.append(point)
 
-            # Write batch
-            self.write_api.write(bucket=self.bucket, record=points)
+        # Write batch
+        self.write_api.write(bucket=self.bucket, record=points)
 
-            # Verify batch write
-            query = f'''
-            from(bucket: "{self.bucket}")
-            |> range(start: -1h)
-            |> filter(fn: (r) => r._measurement == "batch_test")
-            |> count()
-            '''
+        # Verify batch write
+        query = f'''
+        from(bucket: "{self.bucket}")
+        |> range(start: -1h)
+        |> filter(fn: (r) => r._measurement == "batch_test")
+        |> count()
+        '''
 
-            result = self.query_api.query(query)
-            assert len(result) > 0, "Batch write verification failed"
-        except Exception as e:
-            import pytest
-            pytest.skip(
-                f"Batch write test skipped due to connection issues: {e}")
+        result = self.query_api.query(query)
+        assert len(result) > 0, "Batch write verification failed"
 
     def test_query_data(self):
         """Test querying data with various filters"""
-        try:
-            # First write some test data
-            test_points = [
-                Point("query_test").tag(
-                    "region", "us-east-1").field("cpu_usage", 45.2),
-                Point("query_test").tag(
-                    "region", "us-west-2").field("cpu_usage", 67.8),
-                Point("query_test").tag(
-                    "region", "eu-west-1").field("cpu_usage", 23.1)
-            ]
+        # First write some test data
+        test_points = [
+            Point("query_test").tag(
+                "region", "us-east-1").field("cpu_usage", 45.2),
+            Point("query_test").tag(
+                "region", "us-west-2").field("cpu_usage", 67.8),
+            Point("query_test").tag(
+                "region", "eu-west-1").field("cpu_usage", 23.1)
+        ]
 
-            self.write_api.write(bucket=self.bucket, record=test_points)
+        self.write_api.write(bucket=self.bucket, record=test_points)
 
-            # Query with filter
-            query = f'''
-            from(bucket: "{self.bucket}")
-            |> range(start: -1h)
-            |> filter(fn: (r) => r._measurement == "query_test")
-            |> filter(fn: (r) => r.region == "us-east-1")
-            '''
+        # Query with filter
+        query = f'''
+        from(bucket: "{self.bucket}")
+        |> range(start: -1h)
+        |> filter(fn: (r) => r._measurement == "query_test")
+        |> filter(fn: (r) => r.region == "us-east-1")
+        '''
 
-            result = self.query_api.query(query)
-            assert len(result) > 0, "Query with filter failed"
-        except Exception as e:
-            import pytest
-            pytest.skip(f"Query test skipped due to connection issues: {e}")
+        result = self.query_api.query(query)
+        assert len(result) > 0, "Query with filter failed"
 
     def test_aws_integration(self):
         """Test AWS integration (EC2 metadata simulation)"""

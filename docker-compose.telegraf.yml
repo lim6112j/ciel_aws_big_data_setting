@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf-influxdb-postgres
+    restart: unless-stopped
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    env_file:
+      - influxdb_to_postgres.env
+    depends_on:
+      - postgres
+    networks:
+      - metrics-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-metrics
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - metrics-network
+
+volumes:
+  postgres_data:
+
+networks:
+  metrics-network:
+    driver: bridge
