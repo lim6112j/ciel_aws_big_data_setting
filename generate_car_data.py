@@ -2,9 +2,14 @@ import random
 import time
 import argparse
 import os
+import ssl
+import urllib3
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def generate_car_data(duration):
@@ -20,12 +25,15 @@ def generate_car_data(duration):
     influxdb_org = os.getenv('INFLUXDB_ORG')
     influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
 
-    # Initialize InfluxDB client with SSL verification disabled for local development
+    # Initialize InfluxDB client with comprehensive SSL and connection settings
     client = InfluxDBClient(
         url=influxdb_url, 
         token=influxdb_token, 
         org=influxdb_org,
-        verify_ssl=False
+        verify_ssl=False,
+        ssl_ca_cert=None,
+        timeout=30000,
+        retries=3
     )
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
